@@ -1,0 +1,16 @@
+fastapi==0.141.1
+fpdf2==2.8.8
+httpx==0.28.1
+langchain_core==1.6.3
+langchain_google_genai==4.4.0
+langchain_pymupdf4llm==1.28.0
+langgraph==1.2.11
+pandas==3.0.6
+Pillow==12.3.0
+psycopg==3.3.4
+psycopg_pool==3.3.1
+pydantic==2.13.5
+python-dotenv==1.2.3
+python_dateutil==2.9.0.post0
+python_docx==1.2.0
+Requests==2.34.2

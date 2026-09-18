@@ -1,0 +1,45 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whatsapp
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist user uploads across container restarts
+      - ./server_uploads:/app/app/uploads
+      # GCP Service Account key for Vertex AI
+      - ./project-45267852-1c84-4327-ba7-5aa45bdcc1fd.json:/app/gcp-key.json:ro
+    env_file:
+      - .env
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-key.json
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+ 
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
