@@ -29,16 +29,30 @@ async def verify(request: Request):
     if hub_verify_token == VERIFY_TOKEN:
         return PlainTextResponse(hub_challenge)
     return PlainTextResponse("Invalid token", status_code=403)
+import hashlib
+from apps.graph import async_pool
 
 async def process_and_reply(message: dict, thread_id: str, from_number: str):
-    try:
-        # LLM aur graph ka heavy kaam yahan background me hoga
-        reply_text = await response(message, thread_id, from_number)
-        print(reply_text)
-        if reply_text:
-            await send_message(from_number, reply_text)
-    except Exception as e:
-        print(f"[background task error]: {e}")
+    lock_key = int(hashlib.md5(thread_id.encode()).hexdigest()[:15], 16)
+
+    async with async_pool.connection() as conn:
+        cur = await conn.execute("SELECT pg_try_advisory_lock(%s)", (lock_key,))
+        row = await cur.fetchone()
+        got_lock = row['pg_try_advisory_lock'] # type: ignore
+
+        if not got_lock:
+            await send_message(from_number, "Only one item is processed at a time. This one has been discarded — please send it again once your current item is done.")
+            return
+
+        try:
+            reply_text = await response(message, thread_id, from_number)
+            print(reply_text)
+            if reply_text:
+                await send_message(from_number, reply_text)
+        except Exception as e:
+            print(f"[background task error]: {e}")
+        finally:
+            await conn.execute("SELECT pg_advisory_unlock(%s)", (lock_key,))
 
 @app.post("/webhook")
 async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANGED: background_tasks add kiya
