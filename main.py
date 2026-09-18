@@ -41,13 +41,23 @@ async def process_and_reply(message: dict, thread_id: str, from_number: str):
         print(f"[background task error]: {e}")
 
 @app.post("/webhook")
-async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANGED: background_tasks add kiya
+async def receive(request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
     try:
-        # Fetch the user details from the incoming request
-        message = data["entry"][0]["changes"][0]["value"]["messages"][0]
+        messages = data["entry"][0]["changes"][0]["value"].get("messages")
+        if not messages:
+            return {"status": "ok"}
+
+        if len(messages) > 1:
+            from_number = messages[0]["from"]
+            await send_message(from_number, "Right now we accept only one media file at a time,\n \
+                               So other files will be auto ignored and only the first one will be processed.")
+
+        message = messages[0]  # CHANGED: pehle jaisa hi, sirf ab ek warning bhi bhej di agar zaroorat thi
         print(f"Received message: {message}")
         from_number = message["from"]
+
+        # ... baaki code jaisa hai waisa hi
 
         # Fetch the user details from DB and
         existing_user = await fetch_users(from_number)
