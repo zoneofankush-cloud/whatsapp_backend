@@ -30,34 +30,28 @@ async def verify(request: Request):
         return PlainTextResponse(hub_challenge)
     return PlainTextResponse("Invalid token", status_code=403)
 
+import asyncio
+user_locks: dict[str, asyncio.Lock] = {}  # CHANGED
+
 async def process_and_reply(message: dict, thread_id: str, from_number: str):
-    try:
-        # LLM aur graph ka heavy kaam yahan background me hoga
-        reply_text = await response(message, thread_id, from_number)
-        print(reply_text)
-        if reply_text:
-            await send_message(from_number, reply_text)
-    except Exception as e:
-        print(f"[background task error]: {e}")
+    lock = user_locks.setdefault(thread_id, asyncio.Lock())  # CHANGED
+    async with lock:  # CHANGED: ek user ka ek hi message ek waqt process hoga
+        try:
+            reply_text = await response(message, thread_id, from_number)
+            print(reply_text)
+            if reply_text:
+                await send_message(from_number, reply_text)
+        except Exception as e:
+            print(f"[background task error]: {e}")
 
 @app.post("/webhook")
-async def receive(request: Request, background_tasks: BackgroundTasks):
+async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANGED: background_tasks add kiya
     data = await request.json()
     try:
-        messages = data["entry"][0]["changes"][0]["value"].get("messages")
-        if not messages:
-            return {"status": "ok"}
-
-        if len(messages) > 1:
-            from_number = messages[0]["from"]
-            await send_message(from_number, "Right now we accept only one media file at a time,\n \
-                               So other files will be auto ignored and only the first one will be processed.")
-
-        message = messages[0]  # CHANGED: pehle jaisa hi, sirf ab ek warning bhi bhej di agar zaroorat thi
+        # Fetch the user details from the incoming request
+        message = data["entry"][0]["changes"][0]["value"]["messages"][0]
         print(f"Received message: {message}")
         from_number = message["from"]
-
-        # ... baaki code jaisa hai waisa hi
 
         # Fetch the user details from DB and
         existing_user = await fetch_users(from_number)
