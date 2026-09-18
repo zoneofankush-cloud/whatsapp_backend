@@ -27,8 +27,7 @@ async def send_message(to: str, text: str):
     async with httpx.AsyncClient() as client:
         r = await client.post(url, headers=headers, json=payload)
 
-    with open("messages.json", "a") as f:
-        json.dump(f"{to}:{text}", f)
+
     return r.json()
 
 # =================================================================

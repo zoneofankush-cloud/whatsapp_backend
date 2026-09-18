@@ -26,8 +26,7 @@ async def send_message(to, text):
     async with httpx.AsyncClient() as client:
         r = await client.post(url, headers=headers, json=payload)
 
-    with open("messages.json", "a") as f:
-        json.dump(f"{to}:{text}", f)
+
     return r.json()
 
 
@@ -58,8 +57,7 @@ async def send_interactive_buttons(recipient_number):
     async with httpx.AsyncClient() as client:
         r = await client.post(url, headers=headers, json=payload)
 
-    with open("messages.json", "a") as f:
-        json.dump(f"{recipient_number}:{payload}", f)
+
     return r.json()
 
 async def send_confirm_buttons(recipient_number, body_text):  # CHANGED: naya function, save/discard ke liye

@@ -29,7 +29,7 @@ if not DBConnection:
 
 async_pool = AsyncConnectionPool(
         conninfo=DBConnection,
-        max_size=5,
+        max_size=20,
         min_size=1,
         kwargs={"autocommit": True, "prepare_threshold": 0, "row_factory": dict_row},
         open=False
