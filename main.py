@@ -30,19 +30,15 @@ async def verify(request: Request):
         return PlainTextResponse(hub_challenge)
     return PlainTextResponse("Invalid token", status_code=403)
 
-import asyncio
-user_locks: dict[str, asyncio.Lock] = {}  # CHANGED
-
 async def process_and_reply(message: dict, thread_id: str, from_number: str):
-    lock = user_locks.setdefault(thread_id, asyncio.Lock())  # CHANGED
-    async with lock:  # CHANGED: ek user ka ek hi message ek waqt process hoga
-        try:
-            reply_text = await response(message, thread_id, from_number)
-            print(reply_text)
-            if reply_text:
-                await send_message(from_number, reply_text)
-        except Exception as e:
-            print(f"[background task error]: {e}")
+    try:
+        # LLM aur graph ka heavy kaam yahan background me hoga
+        reply_text = await response(message, thread_id, from_number)
+        print(reply_text)
+        if reply_text:
+            await send_message(from_number, reply_text)
+    except Exception as e:
+        print(f"[background task error]: {e}")
 
 @app.post("/webhook")
 async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANGED: background_tasks add kiya
