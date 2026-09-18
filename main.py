@@ -40,7 +40,8 @@ async def process_and_reply(message: dict, thread_id: str, from_number: str):
         got_lock = row['pg_try_advisory_lock'] # type: ignore
 
         if not got_lock:
-            await send_message(from_number, "Only one item is processed at a time. This one has been discarded — please send it again once your current item is done.")
+            await send_message(from_number, "Only *one* media/file is *Processed* at a time.\n\
+            Others are *Discarded*\n\n— Kindly send others files again once your one file is Processed.")
             return
 
         try:
@@ -60,7 +61,7 @@ async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANG
         # Fetch the user details from the incoming request
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
         print(f"Received message: {message}", flush=True)
-        
+
         if message["type"] == "unsupported":
             return {"status": "ok"}
         
