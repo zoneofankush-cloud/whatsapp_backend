@@ -46,7 +46,7 @@ async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANG
     try:
         # Fetch the user details from the incoming request
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
-        print(f"Received message: {message}")
+        print(f"Received message: {message}", flush=)
         from_number = message["from"]
 
         # Fetch the user details from DB and
@@ -70,7 +70,6 @@ async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANG
     
     except Exception as e:
         print(f"[webhook error]: {e}")
-        traceback.print_exc()
     return {"status": "ok"}
 
 from apps.graph import async_pool
