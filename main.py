@@ -46,7 +46,7 @@ async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANG
     try:
         # Fetch the user details from the incoming request
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
-        print(f"Received message: {message}", flush=)
+        print(f"Received message: {message}", flush=True)
         from_number = message["from"]
 
         # Fetch the user details from DB and
