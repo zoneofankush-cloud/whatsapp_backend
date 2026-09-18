@@ -22,3 +22,5 @@ env/
 .git/
 Dockerfile
 docker-compose.yml
+
+ssh-key-2026-08-20.key
