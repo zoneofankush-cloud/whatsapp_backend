@@ -72,7 +72,7 @@ async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANG
             return {"status": "ok"}
 
         # Send immideate reply of processing if the message is not text or interactive to not to be bored
-        if not message['type'] in ['text', 'interactive']:
+        if message['type'] in ['image', 'audio', 'document']:  # CHANGED: "not in [text, interactive]" ki jagah explicit list
             await send_message(from_number, "⏳ Reading Your Receipt ...")
 
         # Process the file in background to immidiate {"status": "ok"} response and 
