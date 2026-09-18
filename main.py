@@ -33,8 +33,7 @@ import hashlib
 from apps.graph import async_pool
 
 async def process_and_reply(message: dict, thread_id: str, from_number: str):
-    lock_key = int(hashlib.md5(thread_id.encode()).hexdigest()[:15], 16)
-
+    lock_key = int(hashlib.md5(str(thread_id).encode()).hexdigest()[:15], 16)
     async with async_pool.connection() as conn:
         cur = await conn.execute("SELECT pg_try_advisory_lock(%s)", (lock_key,))
         row = await cur.fetchone()
