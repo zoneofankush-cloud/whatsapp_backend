@@ -60,6 +60,10 @@ async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANG
         # Fetch the user details from the incoming request
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
         print(f"Received message: {message}", flush=True)
+        
+        if message["type"] == "unsupported":
+            return {"status": "ok"}
+        
         from_number = message["from"]
 
         # Fetch the user details from DB and
