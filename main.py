@@ -34,17 +34,31 @@ from apps.graph import async_pool
 
 async def process_and_reply(message: dict, thread_id: str, from_number: str):
     lock_key = int(hashlib.md5(str(thread_id).encode()).hexdigest()[:15], 16)
+    reject_lock_key = lock_key + 1  # Rejection message dedup ke liye alag lock
+
     async with async_pool.connection() as conn:
         cur = await conn.execute("SELECT pg_try_advisory_lock(%s)", (lock_key,))
         row = await cur.fetchone()
         got_lock = row['pg_try_advisory_lock'] # type: ignore
 
         if not got_lock:
-            await send_message(from_number, "Only *one* media/file is *Processed* at a time.\n\
-            Others are *Discarded*\n\n— Kindly send others files again once your one file is Processed.")
+            # Sirf pehla rejected request hi "discarded" message bhejega
+            cur2 = await conn.execute("SELECT pg_try_advisory_lock(%s)", (reject_lock_key,))
+            row2 = await cur2.fetchone()
+            got_reject_lock = row2['pg_try_advisory_lock'] # type: ignore
+            if got_reject_lock:
+                try:
+                    await send_message(from_number, "Only *one* media/file is *Processed* at a time.\n"
+                    "Others are *Discarded*\n\n— Kindly send others files again once your one file is Processed.")
+                finally:
+                    await conn.execute("SELECT pg_advisory_unlock(%s)", (reject_lock_key,))
             return
 
         try:
+            # "Reading..." sirf usi request ke liye jo actually process ho rahi hai
+            if message.get('type') in ['image', 'audio', 'document']:
+                await send_message(from_number, "⏳ Reading Your Receipt ...")
+
             reply_text = await response(message, thread_id, from_number)
             print(reply_text)
             if reply_text:
@@ -76,9 +90,7 @@ async def receive(request: Request, background_tasks: BackgroundTasks):  # CHANG
             await send_message(from_number, "Welcome to the JomoAI Expense Tracker, You heve been Registered and now You can continue to Record Your Expenses")
             return {"status": "ok"}
 
-        # Send immideate reply of processing if the message is not text or interactive to not to be bored
-        if message['type'] in ['image', 'audio', 'document']:  # CHANGED: "not in [text, interactive]" ki jagah explicit list
-            await send_message(from_number, "⏳ Reading Your Receipt ...")
+
 
         # Process the file in background to immidiate {"status": "ok"} response and 
         # once process is complete send the reply back to the user
